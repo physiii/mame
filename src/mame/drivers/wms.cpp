@@ -75,15 +75,17 @@
 
 ***************************************************************************************************/
 
-
 #include "emu.h"
 #include "cpu/i86/i186.h"
 #include "machine/pcshare.h"
+#include "machine/ins8250.h"
+#include "machine/microtch.h"
 #include "video/clgd542x.h"
+#include "machine/nvram.h"
+
 #include "cpu/adsp2100/adsp2100.h"
 #include "emupal.h"
 #include "screen.h"
-#include "machine/nvram.h"
 
 #define MAIN_CLOCK        XTAL(40'000'000)          // Pletronics 40.000 MHz. Crystal. Used for CPU clock.
 #define VIDEO_CLOCK       XTAL(14'318'181)    // Pletronics MP49 14.31818 MHz. Crystal. Used in common VGA ISA cards.
@@ -189,26 +191,46 @@ GFXDECODE_END
 void wms_state::wms(machine_config &config)
 {
 	printf("!! wms !!\n");
+
 	/* basic machine hardware */
 	I80188(config, m_maincpu, MAIN_CLOCK);    // AMD N80C188-20, ( 40 MHz. internally divided by 2)
 	m_maincpu->set_addrmap(AS_PROGRAM, &wms_state::wms_map);
 	m_maincpu->set_addrmap(AS_IO, &wms_state::wms_io);
+	// m_maincpu->set_irq_acknowledge_callback("pic8259_1", FUNC(pic8259_device::inta_cb));
 
-	adsp2105_device &adsp(ADSP2105(config, "adsp", MAIN_CLOCK / 2));  // ADSP-2105 could run either at 13.824 or 20 MHz...
-	adsp.set_disable();
-	adsp.set_addrmap(AS_PROGRAM, &wms_state::adsp_program_map);
-	adsp.set_addrmap(AS_DATA, &wms_state::adsp_data_map);
+	/* video hardware */
+	pcvideo_cirrus_gd5428(config);
 
-	screen_device &screen(SCREEN(config, "screen", SCREEN_TYPE_RASTER));
-	screen.set_refresh_hz(60);
-	screen.set_vblank_time(ATTOSECONDS_IN_USEC(0));
-	screen.set_size(32*8, 32*8);
-	screen.set_visarea(0*8, 32*8-1, 2*8, 30*8-1);
-	screen.set_screen_update(FUNC(wms_state::screen_update_wms));
-	screen.set_palette("palette");
+	// pcat_common(config);
+	// ns16450_device &uart(NS16450(config, "ns16450_0", XTAL(1'843'200)));
+	// uart.out_tx_callback().set("microtouch", FUNC(microtouch_device::rx));
+	// uart.out_int_callback().set("pic8259_1", FUNC(pic8259_device::ir4_w));
+	//
+	// MICROTOUCH(config, m_microtouch, 9600).stx().set(uart, FUNC(ins8250_uart_device::rx_w)); // rate?
+	//
+	// NVRAM(config, "nvram", nvram_device::DEFAULT_ALL_0);
 
-	GFXDECODE(config, "gfxdecode", "palette", gfx_wms);
-	PALETTE(config, "palette").set_entries(0x100);
+
+	// /* basic machine hardware */
+	// I80188(config, m_maincpu, MAIN_CLOCK);    // AMD N80C188-20, ( 40 MHz. internally divided by 2)
+	// m_maincpu->set_addrmap(AS_PROGRAM, &wms_state::wms_map);
+	// m_maincpu->set_addrmap(AS_IO, &wms_state::wms_io);
+	//
+	// adsp2105_device &adsp(ADSP2105(config, "adsp", MAIN_CLOCK / 2));  // ADSP-2105 could run either at 13.824 or 20 MHz...
+	// adsp.set_disable();
+	// adsp.set_addrmap(AS_PROGRAM, &wms_state::adsp_program_map);
+	// adsp.set_addrmap(AS_DATA, &wms_state::adsp_data_map);
+	//
+	// screen_device &screen(SCREEN(config, "screen", SCREEN_TYPE_RASTER));
+	// screen.set_refresh_hz(60);
+	// screen.set_vblank_time(ATTOSECONDS_IN_USEC(0));
+	// screen.set_size(32*8, 32*8);
+	// screen.set_visarea(0*8, 32*8-1, 2*8, 30*8-1);
+	// screen.set_screen_update(FUNC(wms_state::screen_update_wms));
+	// screen.set_palette("palette");
+	//
+	// GFXDECODE(config, "gfxdecode", "palette", gfx_wms);
+	// PALETTE(config, "palette").set_entries(0x100);
 }
 
 
